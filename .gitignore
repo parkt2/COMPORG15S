@@ -1,0 +1,7 @@
+# exclude common compiler files and such
+*.un
+*.a
+*.out
+*.o
+*.e
+*.exe # maybe, maybe not
