@@ -10,9 +10,7 @@
  * is an uneven amount of characters, the last 4 bits of the last byte is entered as 
  * '1111' or 15, a nibble not used in the character table.
  * My uncompression algorithm reverts this process and ends when it hits either the
- * EOF or the '1111' sentinel value. I use fgetc() in this function to read octets;
- * however I acknowledge that chars aren't always 8 bits. Was not sure how else I would
- * read a file byte-by-byte, however.
+ * EOF or the '1111' sentinel value.
  * Finally, I had to have a separate section for the -d flag because unlike -a or -c,
  * the -d flag requires the input file to be read as a binary file.
  */
@@ -23,12 +21,12 @@
 
 /* function list */
 void help(char*);
-int mktable(FILE*);
+int mktable(char*);
 int8_t getnib(char);
 char getint(int8_t);
 char* readfile(FILE*);
-void compress(FILE*, FILE*);
-int uncompress(FILE*, FILE*);
+void compress(char*, FILE*);
+int uncompress(char*, FILE*);
 
 /* struct for character distribution table */
 struct tblchar {
@@ -58,14 +56,17 @@ int main(int argc, char **argv) {
         else if(strcmp(argv[1], "-a") == 0
              || strcmp(argv[1], "-c") == 0) {
             FILE *inf;
+            char *buffer;
             /* check input filestream availability */
             if((inf = fopen(argv[2],"r")) == NULL) {
                 printf("Error: File %s could not be opened for reading.\n", argv[2]);
                 return 0;
             }
+            /* read file */
+            buffer = readfile(inf);
 
             if(strcmp(argv[1], "-a") == 0) {
-                mktable(inf);
+                mktable(buffer);
             } // analyze
 
             else if(strcmp(argv[1], "-c") == 0) {
@@ -77,8 +78,8 @@ int main(int argc, char **argv) {
                 }
 
                 if(strcmp(argv[1], "-c") == 0) {
-                    if(mktable(inf) == 0) {
-                        compress(inf, outf);
+                    if(mktable(buffer) == 0) {
+                        compress(buffer, outf);
                         /* get filesize */
                         fseek(outf, 0L, SEEK_END);
                         int sz = ftell(outf);
@@ -91,25 +92,36 @@ int main(int argc, char **argv) {
 
                 fclose(outf); // close the output filestream
             } // compress
-
-            fclose(inf); // close the input filestream
+            
+            /* free memory since we're done analyzing / compressing */
+            free(buffer);
+            fclose(inf);
         } // -a, -c flags (all use nonbinary input stream)
 
         else if(strcmp(argv[1], "-d") == 0) {
             FILE *inf;
+            char *buffer;
             /* check input filestream availability */
             if((inf = fopen(argv[2],"rb")) == NULL) {
                 printf("Error: File %s could not be opened for reading.\n", argv[2]);
                 return 0;
             }
+            /* read file */
+            buffer = readfile(inf);
+
             FILE *outf;
             /* check output filestream availability */
             if((outf = fopen(argv[3],"rw")) == NULL) {
                 printf("Error: File %s could not be created for reading/writing.\n", argv[3]);
                 return 0;
             }
-            if(uncompress(inf, outf) == 0) {
-                mktable(outf);
+
+            if(uncompress(buffer, outf) == 0) {
+                char *obuffer = readfile(outf);
+                mktable(obuffer);
+                /* free allocated memory since we don't need it anymore */
+                free(buffer);
+                free(obuffer);
                  /* get filesize */
                 fseek(outf, 0L, SEEK_END);
                 int sz = ftell(outf);
@@ -118,6 +130,10 @@ int main(int argc, char **argv) {
             else {
                 printf("\nOutput File: %s\n\twas not uncompressed. Errors were found.\n", argv[3]);
             }
+
+            /* close filestreams */
+            fclose(inf);
+            fclose(outf);
         } // uncompress (uses binary input stream)
 
         else {
@@ -144,7 +160,7 @@ void help(char args[])  {
 
 /*
  * readfile{FILE*)
- * Reads the file into memory and returns a pointer to the char array created from that file.
+ * Reads the file into memory and returns the char pointer.
  * Uses malloc() to dynamically allocate space to the char array. This assumes the size
  * of a char is a byte; obviously this is not guaranteed, but most modern systems consider a
  * char to be a byte in size.
@@ -152,20 +168,19 @@ void help(char args[])  {
 char* readfile(FILE *inf) {
     char *buffer = NULL; // define the buffer
     buffer = malloc(sizeof(char) * (MAXBUF + 1)); // dynamically allocate the buffer; + 1
-                                                // to support null terminator
+                                                  // to support null terminator
     size_t len = fread(buffer, sizeof(char), MAXBUF, inf); // read file into buffer
     buffer[++len] = '\0'; // null terminate
     return buffer;
 }
 
 /*
- * mktable(FILE*)
- * Prints out the character distribution table of the given file. Returns the number of unsupported
+ * mktable(char*)
+ * Prints out the character distribution table of the given array. Returns the number of unsupported
  * characters. The character 'x' signifies unsupported characters. Uses the struct tblchar defined
  * at the top - essentially, it holds a character and the count of that character.
  */
-int mktable(FILE *inf) {
-    rewind(inf); // always want to read from the start of the file
+int mktable(char *buffer) {
     struct tblchar table[16];
     char characters[] = "0123456789.-, \nx"; // char table
     
@@ -176,11 +191,11 @@ int mktable(FILE *inf) {
         table[x].count = 0;
     }
 
-    int c; // chars from file
+    int i = 0;
     printf("Character   Count\n");
     /* Populate the counts table */
-    while((c = fgetc(inf)) != EOF) {
-        switch((char) c) {
+    while(buffer[i] != '\0') { // basically, until we hit the null byte '\0' - C specific and added by readfile()
+        switch(buffer[i]) {
             case '0':
                 table[0].count++;
                 break;
@@ -231,9 +246,10 @@ int mktable(FILE *inf) {
             default:
                 table[15].count++;
         }
+        i++;
     }
     /* Output character distribution table */
-    int i = 0;
+    i = 0; // just resetting the original counter
     for(i; i < 14; i++) {
         printf("%c %15d\n", table[i].c, table[i].count);
     }
@@ -246,26 +262,27 @@ int mktable(FILE *inf) {
 }
 
 /*
- * compress(FILE*, FILE*)
- * Compresses the input file into the output file. Converts each characer in the file
+ * compress(char*, FILE*)
+ * Compresses the character array into the output file. Converts each character in the array
  * to the appropriate 4 bit binary (see getnib()) and pairs them up into bytes before
  * writing to file. In the case of an odd number of characters, the last nibble will
  * be written as '1111' or 15.
  */
-void compress(FILE* inf, FILE* outf) {
-    rewind(inf); // always want to read from the start of the file
+void compress(char *buffer, FILE *outf) {
     int8_t b = 0; // byte to be written to file
-    int c; // chars from file
-    while((c = fgetc(inf)) != EOF) {
-        b |= (getnib((char) c) << 4); // shift c into the first 4 bits
+    int i = 0;
+    while(buffer[i] != '\0') {
+        b |= (getnib((buffer[i]) << 4)); // shift c into the first 4 bits
         /* place the next character to complete the byte; if it reaches the end of file it will
          * place a 15 (the only bit not recognized as a character in a nibzip file) */
-        if((c = fgetc(inf)) != EOF) {
-            b |= getnib((char) c); // place c into the last 4 bits, completing the byte
+        i++; // increment here for the following to work while still completing the while function
+        if(buffer[i] != '\0') {
+            b |= getnib(buffer[i]); // place c into the last 4 bits, completing the byte
+            i++; // increment again if it's not end of file
         }
         else {
             b |= (int8_t) 15; // place 15 into the last 4 bits, completing the byte and thus the file
-        
+            // no increment here since we have reached the end of the file
         }
         /* write to file and reset b) */
         fputc(b, outf);
@@ -281,7 +298,7 @@ void compress(FILE* inf, FILE* outf) {
 int8_t getnib(char c) {
      switch(c) {
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-            return (int8_t) c - '0'; 
+            return (int8_t) c - '0'; // this gets the integer equivalent of the char
         case ',':
             return (int8_t) 10;
         case '-':
@@ -294,7 +311,7 @@ int8_t getnib(char c) {
             return (int8_t) 14;
         case '\r': // MS-DOS signifies a newline with \r\n, which triggers the default case
         default:
-            return (int8_t) 15; // will signify an EOF when decomprssed
+            return (int8_t) 15; // will signify an EOF when decompressed
     }
 }
 
@@ -304,7 +321,7 @@ int8_t getnib(char c) {
  * characters, i.e. the first 4 bits are 0. Unsupported characters are returned as 'x' to be handled
  * accordingly.
  */
-char getint(int8_t i) { 
+char getint(int8_t i) {
     switch(i) {
         case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9:
             return (char)((int) '0') + i; // this gets the char equivalent of the integer
@@ -325,19 +342,18 @@ char getint(int8_t i) {
 }
 
 /*
- * uncompress(FILE*, FILE*)
+ * uncompress(char*, FILE*)
  * Uncompresses the input file into the output file and prints out the character distribution table. Returns
  * 0 if successful and 1 if unsuccessful. As long as input file being uncompressed was correctly compressed
  * via the compress function and doesn't contain unsupported characters, uncompress() should always return 0.
  */
-int uncompress(FILE* inf, FILE* outf) {
-    rewind(inf); // always want to read from the start of the file
-    int c;
-    while((c = fgetc(inf)) != EOF) {
+int uncompress(char *buffer, FILE *outf) {
+    int i = 0;
+    while(buffer[i] != '\0') {
         /* get the integer representations of each nibble */
-        int8_t first = c >> 4; // shifts by 4 to get the original integer representation
-        int8_t second = c & 15; // masks the first half (0000 1111)
-        
+        //int8_t first = c >> 4; // shifts by 4 to get the original integer representation
+        //int8_t second = c & 15; // masks the first half (0000 1111)
+        i++;
     }
     return 0;
 }
