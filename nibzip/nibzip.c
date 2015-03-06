@@ -17,14 +17,17 @@
  * the -d flag requires the input file to be read as a binary file.
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
+#define MAXBUF 500000000 // 500MB maximum filesize for buffer 
 
 /* function list */
 void help(char*);
 int mktable(FILE*);
-void compress(FILE*, FILE*);
 int8_t getnib(char);
 char getint(int8_t);
+char* readfile(FILE*);
+void compress(FILE*, FILE*);
 int uncompress(FILE*, FILE*);
 
 /* struct for character distribution table */
@@ -130,14 +133,30 @@ int main(int argc, char **argv) {
  * help(char*)
  * Prints out the help and usage information to the standard output.
  */
- void help(char args[])  {
+void help(char args[])  {
     printf("Usage: %s [-acdh] [INFILE] [OUTFILE]\n", args);
     printf("Flags:\n");
     printf("-h: Prints help and usage information.\n");
     printf("-a: Analyzes and prints out a character distribution table computed from the input file.\n");
     printf("-c: Compresses the input file into the output file and prints out a character distribution table.\n");
     printf("-d: Decompresses the input file, writes the unpacked bytes to the output file and prints out the character distribution table.\n");
- }
+}
+
+/*
+ * readfile{FILE*)
+ * Reads the file into memory and returns a pointer to the char array created from that file.
+ * Uses malloc() to dynamically allocate space to the char array. This assumes the size
+ * of a char is a byte; obviously this is not guaranteed, but most modern systems consider a
+ * char to be a byte in size.
+ */
+char* readfile(FILE *inf) {
+    char *buffer = NULL; // define the buffer
+    buffer = malloc(sizeof(char) * (MAXBUF + 1)); // dynamically allocate the buffer; + 1
+                                                // to support null terminator
+    size_t len = fread(buffer, sizeof(char), MAXBUF, inf); // read file into buffer
+    buffer[++len] = '\0'; // null terminate
+    return buffer;
+}
 
 /*
  * mktable(FILE*)
