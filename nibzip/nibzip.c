@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
                         /* get filesize */
                         fseek(outf, 0L, SEEK_END);
                         int sz = ftell(outf);
-                        printf("\nOutput File: %s\n\twas compressed successfully. New size is %d bytes.", argv[3], sz);
+                        printf("\nOutput File: %s\n\twas compressed successfully. New size is %d bytes.\n", argv[3], sz);
                     }
                     else {
                         printf("\nOutput File: %s\n\twas not compressed.\n", argv[3]);
@@ -105,12 +105,16 @@ int main(int argc, char **argv) {
                 printf("Error: File %s could not be created for reading/writing.\n", argv[3]);
                 return 0;
             }
-            uncompress(inf, outf);
-            mktable(outf);
-             /* get filesize */
-            fseek(outf, 0L, SEEK_END);
-            int sz = ftell(outf);
-            printf("\nOutput File: %s\n\twas uncompressed successfully. File size is %d bytes.", argv[3], sz);
+            if(uncompress(inf, outf) == 0) {
+                mktable(outf);
+                 /* get filesize */
+                fseek(outf, 0L, SEEK_END);
+                int sz = ftell(outf);
+                printf("\nOutput File: %s\n\twas uncompressed successfully. File size is %d bytes.\n", argv[3], sz);
+            }
+            else {
+                printf("\nOutput File: %s\n\twas not uncompressed. Errors were found.\n", argv[3]);
+            }
         } // uncompress (uses binary input stream)
 
         else {
