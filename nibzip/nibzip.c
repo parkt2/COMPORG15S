@@ -273,6 +273,9 @@ void compress(char *buffer, FILE *outf) {
     int i = 0;
     while(buffer[i] != '\0') {
         b |= (getnib((buffer[i]) << 4)); // shift c into the first 4 bits
+        if(buffer[i] == '0') {
+            printf("i: %d buffer: %c getnib: %d b: %d\n",i, buffer[i], getnib((buffer[i]) << 4), b);
+        } // ????????????? I DONT KNOW WHATS GOING ON
         /* place the next character to complete the byte; if it reaches the end of file it will
          * place a 15 (the only bit not recognized as a character in a nibzip file) */
         i++; // increment here for the following to work while still completing the while function
