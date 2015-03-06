@@ -1,5 +1,5 @@
 # exclude common compiler files and such
-*.un
+*.un~
 *.a
 *.out
 *.o
