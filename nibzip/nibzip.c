@@ -4,15 +4,15 @@
  * Title: nibzip.c
  * Comments:
  * I included <stdint.h> to guarantee an 8bit integer for cross-platform independence.
- * I also put a check for the \r included by Windows so that the program would correctly
- * output regardless of whether the input file was DOS or UNIX.
+ * This also lets me guarantee bitwise operators within 8 bits.
+ * I also note that DOS platforms use \r\n as new line and such would not be abe to
+ * compress correctly ('\r' not being a supported character).
  * My compression algorithm stores every 2 characters as a byte. In the case that there
  * is an uneven amount of characters, the last 4 bits of the last byte is entered as 
  * '1111' or 15, a nibble not used in the character table.
  * My uncompression algorithm reverts this process and ends when it hits either the
- * EOF or the '1111' sentinel value.
- * Finally, I had to have a separate section for the -d flag because unlike -a or -c,
- * the -d flag requires the input file to be read as a binary file.
+ * EOF or the '1111' sentinel value. However, if it encounters this value before the null
+ * byte (EOF), it returns 1, signaling an error in the uncompression process.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,30 +37,7 @@ struct tblchar {
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
     if(argc == 1) { // if user only inputs the program name
-        //help(argv[0]);
-        int n = getnib('.') << 4;
-        int a = getnib('1');
-        n |= a;
-        int bitswanted = 8;
-        int *bits = malloc(sizeof(int) * bitswanted);
-
-                int k;
-                  for(k=0; k<bitswanted; k++){
-                          int mask =  1 << k;
-                              int masked_n = n & mask;
-                                  int thebit = masked_n >> k;
-                                      bits[k] = thebit;
-                                        }
-
-
-                    printf("%d = ", n);
-
-                      int i;
-                        for(i=bitswanted-1; i>=0;i--){
-                                printf("%d ", bits[i]);
-                                  }
-
-                          printf("\n");
+        help(argv[0]);
     }
 
     else if(strcmp(argv[1], "-h") == 0 && argc != 2
@@ -266,8 +243,6 @@ int mktable(char *buffer) {
             case '\n':
                 table[14].count++;
                 break;
-            case '\r':
-                break; // MS-DOS signifies a newline with \r\n, which triggers the default case
             default:
                 table[15].count++;
         }
@@ -291,7 +266,8 @@ int mktable(char *buffer) {
  * Compresses the character array into the output file. Converts each character in the array
  * to the appropriate 4 bit binary (see getnib()) and pairs them up into bytes before
  * writing to file. In the case of an odd number of characters, the last nibble will
- * be written as '1111' or 15.
+ * be written as '1111' or 15. This will be handled by the uncompression function as
+ * 'x', signaling an early EOF before the null bye '\0'.
  */
 void compress(char *buffer, FILE *outf) {
     uint8_t b = 0; // byte to be written to file
@@ -300,8 +276,7 @@ void compress(char *buffer, FILE *outf) {
         b |= (getnib((buffer[i])) << 4); // shift c into the first 4 bits
         /* place the next character to complete the byte; if it reaches the end of file it will
          * place a 15 (the only bit not recognized as a character in a nibzip file) */
-        i++; // increment here for the following to work while still completing the while function
-        if(buffer[i] != '\0') {
+        if(buffer[++i] != '\0') {
             b |= getnib(buffer[i]); // place c into the last 4 bits, completing the byte
             i++; // increment again if it's not end of file
         }
@@ -334,7 +309,6 @@ uint8_t getnib(char c) {
             return (uint8_t) 13;
         case '\n':
             return (uint8_t) 14;
-        case '\r': // MS-DOS signifies a newline with \r\n, which triggers the default case
         default:
             return (uint8_t) 15; // will signify an EOF when decompressed
     }
@@ -368,7 +342,7 @@ char getch(uint8_t i) {
 
 /*
  * uncompress(char*, FILE*)
- * Uncompresses the input file into the output file by splitting bytes into nibblets. Returns
+ * Uncompresses the input file into the output file by splitting bytes into nibbles. Returns
  * 0 if successful and 1 if unsuccessful. As long as input file being uncompressed was correctly compressed
  * via the compress function and doesn't contain unsupported characters, uncompress() should always return 0.
  */
@@ -385,6 +359,9 @@ int uncompress(char *buffer, FILE *outf) {
             fputc(second_c, outf);
         }
         i++;
+        if(second_c == 'x' && buffer[i] != '\0') { // unsupported conversion before end of file?
+            return 1;
+        }
     }
     return 0;
 }
