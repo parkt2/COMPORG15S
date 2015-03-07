@@ -22,8 +22,8 @@
 /* function list */
 void help(char*);
 int mktable(char*);
-int8_t getnib(char);
-char getint(int8_t);
+uint8_t getnib(char);
+char getch(uint8_t);
 char* readfile(FILE*);
 void compress(char*, FILE*);
 int uncompress(char*, FILE*);
@@ -37,7 +37,30 @@ struct tblchar {
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
     if(argc == 1) { // if user only inputs the program name
-        help(argv[0]);
+        //help(argv[0]);
+        int n = getnib('.') << 4;
+        int a = getnib('1');
+        n |= a;
+        int bitswanted = 8;
+        int *bits = malloc(sizeof(int) * bitswanted);
+
+                int k;
+                  for(k=0; k<bitswanted; k++){
+                          int mask =  1 << k;
+                              int masked_n = n & mask;
+                                  int thebit = masked_n >> k;
+                                      bits[k] = thebit;
+                                        }
+
+
+                    printf("%d = ", n);
+
+                      int i;
+                        for(i=bitswanted-1; i>=0;i--){
+                                printf("%d ", bits[i]);
+                                  }
+
+                          printf("\n");
     }
 
     else if(strcmp(argv[1], "-h") == 0 && argc != 2
@@ -111,18 +134,20 @@ int main(int argc, char **argv) {
 
             FILE *outf;
             /* check output filestream availability */
-            if((outf = fopen(argv[3],"rw")) == NULL) {
-                printf("Error: File %s could not be created for reading/writing.\n", argv[3]);
+            if((outf = fopen(argv[3],"w")) == NULL) {
+                printf("Error: File %s could not be opened for writing.\n", argv[3]);
                 return 0;
             }
 
             if(uncompress(buffer, outf) == 0) {
+                fclose(outf);
+                outf = fopen(argv[3],"r"); // now we open it as read
                 char *obuffer = readfile(outf);
                 mktable(obuffer);
                 /* free allocated memory since we don't need it anymore */
                 free(buffer);
                 free(obuffer);
-                 /* get filesize */
+                /* get filesize */
                 fseek(outf, 0L, SEEK_END);
                 int sz = ftell(outf);
                 printf("\nOutput File: %s\n\twas uncompressed successfully. File size is %d bytes.\n", argv[3], sz);
@@ -269,13 +294,10 @@ int mktable(char *buffer) {
  * be written as '1111' or 15.
  */
 void compress(char *buffer, FILE *outf) {
-    int8_t b = 0; // byte to be written to file
+    uint8_t b = 0; // byte to be written to file
     int i = 0;
     while(buffer[i] != '\0') {
-        b |= (getnib((buffer[i]) << 4)); // shift c into the first 4 bits
-        if(buffer[i] == '0') {
-            printf("i: %d buffer: %c getnib: %d b: %d\n",i, buffer[i], getnib((buffer[i]) << 4), b);
-        } // ????????????? I DONT KNOW WHATS GOING ON
+        b |= (getnib((buffer[i])) << 4); // shift c into the first 4 bits
         /* place the next character to complete the byte; if it reaches the end of file it will
          * place a 15 (the only bit not recognized as a character in a nibzip file) */
         i++; // increment here for the following to work while still completing the while function
@@ -284,7 +306,7 @@ void compress(char *buffer, FILE *outf) {
             i++; // increment again if it's not end of file
         }
         else {
-            b |= (int8_t) 15; // place 15 into the last 4 bits, completing the byte and thus the file
+            b |= (uint8_t) 15; // place 15 into the last 4 bits, completing the byte and thus the file
             // no increment here since we have reached the end of the file
         }
         /* write to file and reset b) */
@@ -298,33 +320,33 @@ void compress(char *buffer, FILE *outf) {
  * Returns the nibblet of the char as an 8 bit int, padded with 0s. It is assumed that the character
  * being passed is a supported character; unsupported characters are returned as 15.
  */
-int8_t getnib(char c) {
+uint8_t getnib(char c) {
      switch(c) {
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-            return (int8_t) c - '0'; // this gets the integer equivalent of the char
+            return (uint8_t) c - '0'; // this gets the integer equivalent of the char
         case ',':
-            return (int8_t) 10;
+            return (uint8_t) 10;
         case '-':
-            return (int8_t) 11;
+            return (uint8_t) 11;
         case '.':
-            return (int8_t) 12;
+            return (uint8_t) 12;
         case ' ':
-            return (int8_t) 13;
+            return (uint8_t) 13;
         case '\n':
-            return (int8_t) 14;
+            return (uint8_t) 14;
         case '\r': // MS-DOS signifies a newline with \r\n, which triggers the default case
         default:
-            return (int8_t) 15; // will signify an EOF when decompressed
+            return (uint8_t) 15; // will signify an EOF when decompressed
     }
 }
 
 /*
- * getint(int8_t)
+ * getch(uint8_t)
  * Returns the char of an 8 bit int. It is assumed that the int being passed is one of the supported
  * characters, i.e. the first 4 bits are 0. Unsupported characters are returned as 'x' to be handled
  * accordingly.
  */
-char getint(int8_t i) {
+char getch(uint8_t i) {
     switch(i) {
         case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9:
             return (char)((int) '0') + i; // this gets the char equivalent of the integer
@@ -346,16 +368,22 @@ char getint(int8_t i) {
 
 /*
  * uncompress(char*, FILE*)
- * Uncompresses the input file into the output file and prints out the character distribution table. Returns
+ * Uncompresses the input file into the output file by splitting bytes into nibblets. Returns
  * 0 if successful and 1 if unsuccessful. As long as input file being uncompressed was correctly compressed
  * via the compress function and doesn't contain unsupported characters, uncompress() should always return 0.
  */
 int uncompress(char *buffer, FILE *outf) {
     int i = 0;
     while(buffer[i] != '\0') {
-        /* get the integer representations of each nibble */
-        //int8_t first = c >> 4; // shifts by 4 to get the original integer representation
-        //int8_t second = c & 15; // masks the first half (0000 1111)
+        /* get the character representations of each nibble */
+        uint8_t first = (uint8_t) buffer[i] >> 4; // shifts by 4 to get the original integer representation
+        uint8_t second = (uint8_t) buffer[i] & (uint8_t) 15; // masks the first half (0000 1111)
+        char first_c = getch(first);
+        char second_c = getch(second);
+        fputc(first_c, outf);
+        if(second_c != 'x') { // i.e. extra nibble at the end
+            fputc(second_c, outf);
+        }
         i++;
     }
     return 0;
