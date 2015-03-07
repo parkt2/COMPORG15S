@@ -3,7 +3,7 @@
  * Section: 01
  * Title: nibzip.c
  * Comments:
- * I included <stdint.h> to guarantee an 8bit integer for cross-platform independence.
+ * I included <stdint.h> to guarantee an 8 bit integer for cross-platform independence.
  * This also lets me guarantee bitwise operators within 8 bits.
  * I also note that DOS platforms use \r\n as new line and such would not be abe to
  * compress correctly ('\r' not being a supported character).
@@ -14,9 +14,9 @@
  * EOF or the '1111' sentinel value. However, if it encounters this value before the null
  * byte (EOF), it returns 1, signaling an error in the uncompression process.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <stdio.h> // general I/O functions
+#include <stdlib.h> // certain overloaded functions (malloc in particular)
+#include <stdint.h> // guarantee of unsigned 8 bit integer
 #define MAXBUF 500000000 // 500MB maximum filesize for buffer 
 
 /* function list */
