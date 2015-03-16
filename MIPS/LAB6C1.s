@@ -17,10 +17,10 @@
 # the stack pointer is moved.
 
 .data
-mnstr: .asciiz "main x: "   # main text
-newl: .asciiz "\n"          # newline
-histr: .asciiz "hello x: "  # hello text
-histr2: .asciiz "hello2 x: "# hello2 text
+    mnstr: .asciiz "main x: "
+    newl: .asciiz "\n"
+    histr: .asciiz "hello x: "
+    histr2: .asciiz "hello2 x: "
 .text
 # function main
 .globl main
