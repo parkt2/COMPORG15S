@@ -2,14 +2,14 @@
 .data
     mnstr1: .asciiz "Enter a input line: "
     mnstr2: .asciiz "Enter a pattern to search for: "
-    res0: .asciiz "Results:\n"
-    res1: .asciiz "# of whitespace characters: "
-    res2: .asciiz "# of non-whitespace characters: "
-    res3: .asciiz "# of words: "
-    cho1: .asciiz "The user pattern was foud within the input line\n"
-    cho2: .asciiz "The user pattern was NOT found within the input line\n"
-    err: .asciiz "Line contains whitespace characters only!\n"
-    endl: .asciiz "\n"
+    res0:   .asciiz "Results:\n"
+    res1:   .asciiz "# of whitespace characters: "
+    res2:   .asciiz "# of non-whitespace characters: "
+    res3:   .asciiz "# of words: "
+    cho1:   .asciiz "The user pattern was foud within the input line\n"
+    cho2:   .asciiz "The user pattern was NOT found within the input line\n"
+    err:    .asciiz "Line contains whitespace characters only!\n"
+    endl:   .asciiz "\n"
     strvar: .space 100  # string variable
     serstr: .space 100  # search string variable
 .text
@@ -17,10 +17,11 @@
 .globl main
 main:
     # initialize some registers 
-    addi $s0, $0, 0
-    addi $s1, $0, 0
-    addi $s2, $0, 0
-    addi $s3, $0, 0
+    addi $s0, $0, 0     # string to be analyzed
+    addi $s1, $0, 0     # whitespace characters
+    addi $s2, $0, 0     # non-whitespace characters
+    addi $s3, $0, 0     # words
+    addi $s4, $0, 0     # string to be searched
     la $a0, mnstr1      # print mnstr1
     li $v0, 4
     syscall
@@ -34,7 +35,7 @@ main:
     li $v0, 8           # take in input
     la $a0, serstr      # load "serstr" byte space
     syscall
-    move $s3, $a0       # save to $s3
+    move $s4, $a0       # save to $s4
     jal count           # call count
     beq $s2, 0, error   # error: all whitespace
     la $a0, res1        # print first set of results
@@ -55,7 +56,6 @@ main:
     la $a0, endl        # print newline
     li $v0, 4
     syscall
-    #jal countwords
     #jal searchstring
     li $v0, 10          # quit
     syscall
@@ -69,13 +69,14 @@ error:
 # function count
 #   assigns to $s1 the number of whitespace
 #   assigns to $s2 the number of nonwhitespace
+#   assigns to $s3 the number of words
 count:
-    addi $t0, $0, 0
+    addi $t0, $0, 0     # [i]
 # loop through $s0 (input string)
 loop:
-    add $t1, $s0, $t0
-    lb $t2, 0($t1)
-    beq $t2, 0, exit
+    add $t1, $s0, $t0   # point to strvar[i]
+    lb $t2, 0($t1)      # load strvar[i]'s character
+    beq $t2, 0, exit    # check for the null operator (end of input)
     # check for equality here - if white then restart
     beq $t2, ' ', white
     beq $t2, '\t', white
