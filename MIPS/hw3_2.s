@@ -56,6 +56,15 @@ main:
     la $a0, endl        # print newline
     li $v0, 4
     syscall
+    la $a0, res3        # print third set of results
+    li $v0, 4
+    syscall
+    move $a0, $s3       # print # of words
+    li $v0, 1
+    syscall
+    la $a0, endl        # print newline
+    li $v0, 4
+    syscall
     #jal searchstring
     li $v0, 10          # quit
     syscall
@@ -72,6 +81,7 @@ error:
 #   assigns to $s3 the number of words
 count:
     addi $t0, $0, 0     # [i]
+    addi $t4, $0, 0     # temporary boolean denoting a word
 # loop through $s0 (input string)
 loop:
     add $t1, $s0, $t0   # point to strvar[i]
@@ -82,13 +92,27 @@ loop:
     beq $t2, '\t', white
     beq $t2, '\n', white
     # if we reached this point, it must have been non-whitespace
-    addi $s2, $s2, 1    # increment $s2
-    addi $s1, $s1, -1   # decrement $s1 since it's incremented again
+    # check if we're in a new word or not; if so, increment word
+    # and toggle inword, if not then go straight to normal nonwhite
+    # incrementing
+    beq $t4, 0, inword  # if(inword)
+    j nonwhite
 # case white
 white:
     addi $s1, $s1, 1    # increment $s1
-    addi $t0, $t0, 1    # point to next character
-    j loop              # jump to _loop
+    addi $t4, $0, 0     # if we were in a word, we aren't anymore
+    j end               # jump to end (of loop iteration)
+# case inword
+inword:
+    addi $t4, $0, 1     # set to true now
+    addi $s3, $s3, 1    # increment word
+# case nonwhite
+nonwhite:
+    addi $s2, $s2, 1    # increment $s2
+# case end
+end:
+    addi $t0, $t0, 1    # i++; point to next character
+    j loop              # iterate again
 # exit case
 exit:
     jr $31              # return to main
