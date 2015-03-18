@@ -1,3 +1,14 @@
+# hw3_2.s
+# Kevin Zhang and Tina Guo
+# Calculates number of whitespace, nonwhitespace, and words.
+# Searches the input string for the search string and if it
+# exists, it prints out the relevant text.
+# Note:
+# Since the search text is entered as {text}\n, when searching
+# this naturally would search for {text}\n instead of just
+# {text}. Therefore, instead of checking for the null
+# terminator, I check for \n.
+
 # text and variables
 .data
     mnstr1: .asciiz "Enter a input line: "
@@ -6,7 +17,7 @@
     res1:   .asciiz "# of whitespace characters: "
     res2:   .asciiz "# of non-whitespace characters: "
     res3:   .asciiz "# of words: "
-    cho1:   .asciiz "The user pattern was foud within the input line\n"
+    cho1:   .asciiz "The user pattern was found within the input line\n"
     cho2:   .asciiz "The user pattern was NOT found within the input line\n"
     err:    .asciiz "Line contains whitespace characters only!\n"
     endl:   .asciiz "\n"
@@ -65,7 +76,7 @@ main:
     la $a0, endl        # print newline
     li $v0, 4
     syscall
-    #jal searchstring
+    jal searchstring    # call searchstring
     li $v0, 10          # quit
     syscall
 # error, quit program
@@ -113,6 +124,41 @@ nonwhite:
 end:
     addi $t0, $t0, 1    # i++; point to next character
     j loop              # iterate again
-# exit case
+# exit to main for jal calls
 exit:
     jr $31              # return to main
+# function searchstring
+#   checks if the string is in the word
+#   and outputs the appropriate result text
+searchstring:
+    addi $t0, $0, 0     # i
+    addi $t3, $0, 0     # j
+sloop:
+    add $t1, $s0, $t0   # point to strvar[i]
+    lb $t2, 0($t1)      # load strvar[i]
+    add $t4, $s4, $t3   # point to serstr[j]
+    lb $t5, 0($t4)      # load serstr[j]
+    beq $t5, '\n', instr# reached end of search string, i.e. in string
+    beq $t2, 0, ninstr  # reached null of input string, i.e. not in string
+    bne $t2, $t5, reset # reset if not same character
+    # same character, keep checking
+    addi $t0, $t0, 1    # i++
+    addi $t3, $t3, 1    # j++
+    j sloop             # iterate again
+# case not same character, reset the pointer of serstr
+reset:
+    addi $t0, $t0, 1    # i++
+    addi $t3, $0, 1     # j=0
+    j sloop
+# case in string
+instr:
+    la $a0, cho1        # print cho1
+    li $v0, 4
+    syscall
+    j exit
+# case not in string
+ninstr:
+    la $a0, cho2        # print cho2
+    li $v0, 4
+    syscall
+    j exit
