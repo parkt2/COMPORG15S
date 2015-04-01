@@ -17,16 +17,30 @@ main:       move  $t0, $0        # $t0 is a loop index
             # Sum the elements in the array
 loop:       beq   $t0, $s1, compute # When $t0 = $s1, we hit end of array
             # TODO
+            lw $t2, 0($s0)
+            add $t1, $t1, $t2
+            addi $s0, $s0, 4
+            addi $t0, $t0, 1
             b     loop
 
             # Compute the average using the FP coprocessor
             #    and store the result in average
 compute:
             # TODO
+            lw $t3, length
+            mtc1.d $t3, $f4
+            cvt.d.w $f2, $f4
+            mtc1 $t1, $f1
+            cvt.d.w $f0, $f1
+            div.d $f0, $f0, $f2
+            mov.d $f12, $f0
 
             # Print out average value
             la      $a0, outstr     # Output string
             li      $v0, 4
+            syscall
+
+            li $v0, 3
             syscall
 
             li      $v0, 10         # To the bat mobile
