@@ -78,7 +78,11 @@ void help(char args[])  {
  * Reads in the file and updates the given reference table array.
  */
 void analyze(FILE *inf, struct tblref* references) {
-	rewind(inf);
+	rewind(inf); // just in case
+	char c;
+	while((c = fgetc(inf)) != EOF) {
+
+	}
 }
 
 /*
@@ -88,7 +92,14 @@ void analyze(FILE *inf, struct tblref* references) {
 void print_file(FILE* inf, FILE* outf){
 	rewind(inf);
 	char c;
+	int newline = 1; // boolean
+	int line = 1; // line number
 	while((c = fgetc(inf)) != EOF) {
+		if(newline) {
+			fprintf(outf, "%d\t", line++);
+			newline = 0;
+		} // print line number
+		if(c == '\n') newline = 1;
 		fprintf(outf, "%c", c);
 	}
 	fprintf(outf, "\n"); // just for formatting
