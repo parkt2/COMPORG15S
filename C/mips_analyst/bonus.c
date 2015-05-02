@@ -20,6 +20,7 @@ void help(char*);
 void analyze(FILE*, struct tblref*);
 void print_file(FILE*, FILE*);
 void print_table(FILE*, struct tblref*);
+int whitespace(char);
 
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
@@ -78,11 +79,14 @@ void help(char args[])  {
  * Reads in the file and updates the given reference table array.
  */
 void analyze(FILE *inf, struct tblref* references) {
-	rewind(inf); // just in case
+	/*rewind(inf); // just in case
 	char c;
+	int newline = 1; // new line boolean
+	int in_comment = 0; // comment boolean
+
 	while((c = fgetc(inf)) != EOF) {
 
-	}
+	}*/
 }
 
 /*
@@ -92,16 +96,24 @@ void analyze(FILE *inf, struct tblref* references) {
 void print_file(FILE* inf, FILE* outf){
 	rewind(inf);
 	char c;
-	int newline = 1; // boolean
+	int newline = 1; // new line boolean
 	int line = 1; // line number
 	while((c = fgetc(inf)) != EOF) {
+
 		if(newline) {
-			fprintf(outf, "%d\t", line++);
+
+			if(!whitespace(c = fgetc(inf))) {
+				fprintf(outf, "%d\t", line++);
+			} // TODO: FIX THIS LOL
 			newline = 0;
+
 		} // print line number
+
 		if(c == '\n') newline = 1;
 		fprintf(outf, "%c", c);
+
 	}
+
 	fprintf(outf, "\n"); // just for formatting
 }
 
@@ -112,3 +124,12 @@ void print_file(FILE* inf, FILE* outf){
 void print_table(FILE *outf, struct tblref* references) {
 
 }
+
+/*
+ * int whitespace(char)
+ * Small helper function that determines whether something is whitespace.
+ */
+ int whitespace(char c) {
+ 	if(c == EOF || c == '\r' || c == '\t' || c == '\n' || c == ' ') return 1;
+ 	return 0;
+ }
