@@ -19,7 +19,7 @@ struct tblref {
 void help(char*);
 void analyze(FILE*, struct tblref*);
 void print_file(FILE*, FILE*);
-void print_table(struct tblref*);
+void print_table(FILE*, struct tblref*);
 
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
         }
 
         /* check output filestream availability */
-        if((outf = fopen(argv[3],"w")) == NULL) {
+        if((outf = fopen(argv[2],"w")) == NULL) {
             printf("Error: File %s could not be created for writing.\n", argv[3]);
             return 0;
         }
@@ -78,7 +78,7 @@ void help(char args[])  {
  * Reads in the file and updates the given reference table array.
  */
 void analyze(FILE *inf, struct tblref* references) {
-
+	rewind(inf);
 }
 
 /*
@@ -87,15 +87,17 @@ void analyze(FILE *inf, struct tblref* references) {
  */
 void print_file(FILE* inf, FILE* outf){
 	rewind(inf);
+	char c;
 	while((c = fgetc(inf)) != EOF) {
-
+		fprintf(outf, "%c", c);
 	}
+	fprintf(outf, "\n"); // just for formatting
 }
 
 /*
- * print_table(struct tblref*)
+ * print_table(FILE*, struct tblref*)
  * Prints the reference table array.
  */
-void print_table(struct tblref*) {
+void print_table(FILE *outf, struct tblref* references) {
 
 }
