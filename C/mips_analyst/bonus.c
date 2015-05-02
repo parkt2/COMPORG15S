@@ -18,6 +18,8 @@ struct tblref {
 /* function list */
 void help(char*);
 void analyze(FILE*, struct tblref*);
+void print_file(FILE*, FILE*);
+void print_table(struct tblref*);
 
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
@@ -43,6 +45,16 @@ int main(int argc, char **argv) {
 
         /* read file */
         analyze(inf, references);
+
+        /* print file */
+        print_file(inf, outf);
+
+        /* print table */
+        print_table(outf, references);
+
+        /* close filestreams */
+        fclose(inf);
+        fclose(outf);
     }
     /* Errors */
     else {
@@ -61,6 +73,29 @@ void help(char args[])  {
     printf("Analyzes a MIPS program and prints out a reference table of identifiers.\n");
 }
 
+/*
+ * analyze(FILE*, struct tblref*)
+ * Reads in the file and updates the given reference table array.
+ */
 void analyze(FILE *inf, struct tblref* references) {
+
+}
+
+/*
+ * print_file(FILE*, FILE*)
+ * Prints the input file.
+ */
+void print_file(FILE* inf, FILE* outf){
+	rewind(inf);
+	while((c = fgetc(inf)) != EOF) {
+
+	}
+}
+
+/*
+ * print_table(struct tblref*)
+ * Prints the reference table array.
+ */
+void print_table(struct tblref*) {
 
 }
