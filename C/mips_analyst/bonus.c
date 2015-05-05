@@ -21,6 +21,7 @@ void analyze(FILE*, struct tblref*);
 void print_file(FILE*, FILE*);
 void print_table(FILE*, struct tblref*);
 int whitespace(char);
+char fpeek(FILE*);
 
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
@@ -102,9 +103,10 @@ void print_file(FILE* inf, FILE* outf){
 
 		if(newline) {
 
-			if(!whitespace(c = fgetc(inf))) {
+			if(whitespace(fpeek(inf))) {
 				fprintf(outf, "%d\t", line++);
 			} // TODO: FIX THIS LOL
+
 			newline = 0;
 
 		} // print line number
@@ -133,3 +135,14 @@ void print_table(FILE *outf, struct tblref* references) {
  	if(c == EOF || c == '\r' || c == '\t' || c == '\n' || c == ' ') return 1;
  	return 0;
  }
+
+ /*
+  * char fpeek(FILE*)
+  * Small helper function that peeks at the next character in a filestream.
+  */
+char fpeek(FILE *fstream) {
+	char c;
+	c = fgetc(fstream);
+	ungetc(c, fstream);
+	return c;
+}
