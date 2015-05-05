@@ -103,11 +103,10 @@ void print_file(FILE* inf, FILE* outf){
 
 		if(newline) {
 
-			if(whitespace(fpeek(inf))) {
+			if(!whitespace(c)) {
 				fprintf(outf, "%d\t", line++);
-			} // TODO: FIX THIS LOL
-
-			newline = 0;
+				newline = 0;
+			}
 
 		} // print line number
 
