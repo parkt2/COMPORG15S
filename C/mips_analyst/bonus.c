@@ -19,7 +19,7 @@ struct tblref {
 void help(char*);
 void analyze(FILE*, struct tblref*);
 void print_file(FILE*, FILE*);
-void print_table(FILE*, struct tblref*);
+void print_table(FILE*, struct tblref*, int);
 int whitespace(char);
 char fpeek(FILE*);
 
@@ -31,7 +31,8 @@ int main(int argc, char **argv) {
     /* Actual execution */
     else if(argc == 3) {
     	FILE *inf, *outf;
-    	struct tblref references[100];
+    	struct tblref references[100]; // array holding all references
+    	int tblsize = 0; // size of the above array
 
         /* check input filestream availability */
         if((inf = fopen(argv[1],"r")) == NULL) {
@@ -51,8 +52,19 @@ int main(int argc, char **argv) {
         /* print file */
         print_file(inf, outf);
 
+        references[0].identifier = "label";
+        references[0].defined = 1;
+        int myArray[10] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
+        references[0].lines = myArray;
+
+        references[1].identifier = "label";
+        references[1].defined = 1;
+        int myArray1[10] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
+        references[1].lines = myArray1;
+        tblsize = 2;
+
         /* print table */
-        print_table(outf, references);
+        print_table(outf, references, tblsize);
 
         /* close filestreams */
         fclose(inf);
@@ -114,16 +126,24 @@ void print_file(FILE* inf, FILE* outf){
 		fprintf(outf, "%c", c);
 
 	}
-
-	fprintf(outf, "\n"); // just for formatting
 }
 
 /*
- * print_table(FILE*, struct tblref*)
+ * print_table(FILE*, struct tblref*, int)
  * Prints the reference table array.
  */
-void print_table(FILE *outf, struct tblref* references) {
-
+void print_table(FILE *outf, struct tblref* references, int tblsize) {
+	fprintf(outf, "Identifier Reference Table\n\n");
+	fprintf(outf, "\tIdentifier Definition-Line Use Line(s)\n");
+	int i, j;
+	for(i = 0; i < tblsize; ++i) {
+		fprintf(outf, "\t%-11s", references[i].identifier);
+		fprintf(outf, "%-16d", references[i].defined);
+		for(j = 0; j < 10; ++j) {
+			fprintf(outf, "%-4d", references[i].lines[j]);
+		}
+		fprintf(outf, "\n");
+	}
 }
 
 /*
