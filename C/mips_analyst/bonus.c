@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
         }
 
         /* read file */
-        //analyze(inf, references);
+        analyze(inf, references);
 
         /* print file */
         print_file(inf, outf);
@@ -89,13 +89,9 @@ void analyze(FILE *inf, struct tblref* references) {
 	int line = 1; // line number
 	while((c = fgetc(inf)) != EOF) {
 
-		if(newline) {
-
-			if(!whitespace(c)) {
-
-			}
-
-		}
+		/* check if we're in a comment; if so, skip the line entirely */
+		if(c == '#') go_to_n(inf);
+		else printf("%c",c);
 
 	}
 }
@@ -168,9 +164,12 @@ char fpeek(FILE *fstream) {
  * void go_to_n(FILE*)
  * Small helper function that skips to the end of line or file in a filestream.
  */
- void go_to_n(FILE* inf) {
+ void go_to_n(FILE* fstream) {
  	char c;
- 	while((c = fgetc(inf)) != EOF) {
- 		if(c == '\n') return;
+ 	while((c = fgetc(fstream)) != EOF) {
+ 		if(c == '\n') {
+ 			ungetc('\n', fstream); // return back to newline
+ 			return;
+ 		}
  	}
  }
