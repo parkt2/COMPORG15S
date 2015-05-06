@@ -3,7 +3,7 @@
  * Section: 01
  * Title: bonus.c
  * Comments:
- * 
+ * The sentinel value for the lines is 0 since that will never be a valid line number.
  */
 #include <stdio.h> // general I/O functions
 #include <stdlib.h> // certain overloaded functions (malloc in particular)
@@ -22,7 +22,7 @@ void print_file(FILE*, FILE*);
 void print_table(FILE*, struct tblref*, int);
 int whitespace(char);
 char fpeek(FILE*);
-void go_to_n(FILE*);
+void go_to_n(char, FILE*);
 
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
@@ -85,13 +85,24 @@ void analyze(FILE *inf, struct tblref* references) {
 	rewind(inf); // just in case
 	char c;
 	int newline = 1; // new line boolean
-	int in_comment = 0; // comment boolean
-	int line = 1; // line number
+	int line = 0; // line number
 	while((c = fgetc(inf)) != EOF) {
 
 		/* check if we're in a comment; if so, skip the line entirely */
-		if(c == '#') go_to_n(inf);
-		else printf("%c",c);
+		if(c == '#') go_to_n('\n', inf);
+
+		/* otherwise, continue */
+		else {
+
+			/* keep track of the line number! */
+			if(newline) {
+				if(c != '\n') line++;
+				newline = 0;
+			}
+
+			
+
+		}
 
 	}
 }
@@ -108,12 +119,10 @@ void print_file(FILE* inf, FILE* outf){
 	while((c = fgetc(inf)) != EOF) {
 
 		if(newline) {
-
 			if(c != '\n') {
 				fprintf(outf, "%d\t", line++);
 				newline = 0;
 			}
-
 		} // print line number
 
 		if(c == '\n') newline = 1;
@@ -133,8 +142,9 @@ void print_table(FILE *outf, struct tblref* references, int tblsize) {
 	for(i = 0; i < tblsize; ++i) {
 		fprintf(outf, "\t%-11s", references[i].identifier);
 		fprintf(outf, "%-16d", references[i].defined);
-		for(j = 0; j < 10; ++j) {
-			fprintf(outf, "%-4d", references[i].lines[j]);
+		j = 0;
+		while(references[i].lines[j] != 0) {
+			fprintf(outf, "%-4d", references[i].lines[j++]);
 		}
 		fprintf(outf, "\n");
 	}
@@ -161,14 +171,14 @@ char fpeek(FILE *fstream) {
 }
 
 /*
- * void go_to_n(FILE*)
- * Small helper function that skips to the end of line or file in a filestream.
+ * void go_to_n(char, FILE*)
+ * Small helper function that skips to the given character or EOF in a filestream.
  */
- void go_to_n(FILE* fstream) {
+ void go_to_n(char character, FILE* fstream) {
  	char c;
  	while((c = fgetc(fstream)) != EOF) {
- 		if(c == '\n') {
- 			ungetc('\n', fstream); // return back to newline
+ 		if(c == character) {
+ 			ungetc(character, fstream); // return back to character
  			return;
  		}
  	}
