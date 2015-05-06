@@ -22,6 +22,7 @@ void print_file(FILE*, FILE*);
 void print_table(FILE*, struct tblref*, int);
 int whitespace(char);
 char fpeek(FILE*);
+void go_to_n(FILE*);
 
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
@@ -162,3 +163,14 @@ char fpeek(FILE *fstream) {
 	ungetc(c, fstream);
 	return c;
 }
+
+/*
+ * void go_to_n(FILE*)
+ * Small helper function that skips to the end of line or file in a filestream.
+ */
+ void go_to_n(FILE* inf) {
+ 	char c;
+ 	while((c = fgetc(inf)) != EOF) {
+ 		if(c == '\n') return;
+ 	}
+ }
