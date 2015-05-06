@@ -47,21 +47,10 @@ int main(int argc, char **argv) {
         }
 
         /* read file */
-        analyze(inf, references);
+        //analyze(inf, references);
 
         /* print file */
         print_file(inf, outf);
-
-        references[0].identifier = "label";
-        references[0].defined = 1;
-        int myArray[10] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
-        references[0].lines = myArray;
-
-        references[1].identifier = "label";
-        references[1].defined = 1;
-        int myArray1[10] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
-        references[1].lines = myArray1;
-        tblsize = 2;
 
         /* print table */
         print_table(outf, references, tblsize);
@@ -92,14 +81,22 @@ void help(char args[])  {
  * Reads in the file and updates the given reference table array.
  */
 void analyze(FILE *inf, struct tblref* references) {
-	/*rewind(inf); // just in case
+	rewind(inf); // just in case
 	char c;
 	int newline = 1; // new line boolean
 	int in_comment = 0; // comment boolean
-
+	int line = 1; // line number
 	while((c = fgetc(inf)) != EOF) {
 
-	}*/
+		if(newline) {
+
+			if(!whitespace(c)) {
+
+			}
+
+		}
+
+	}
 }
 
 /*
@@ -115,7 +112,7 @@ void print_file(FILE* inf, FILE* outf){
 
 		if(newline) {
 
-			if(!whitespace(c)) {
+			if(c != '\n') {
 				fprintf(outf, "%d\t", line++);
 				newline = 0;
 			}
@@ -133,7 +130,7 @@ void print_file(FILE* inf, FILE* outf){
  * Prints the reference table array.
  */
 void print_table(FILE *outf, struct tblref* references, int tblsize) {
-	fprintf(outf, "Identifier Reference Table\n\n");
+	fprintf(outf, "\nIdentifier Reference Table\n\n");
 	fprintf(outf, "\tIdentifier Definition-Line Use Line(s)\n");
 	int i, j;
 	for(i = 0; i < tblsize; ++i) {
