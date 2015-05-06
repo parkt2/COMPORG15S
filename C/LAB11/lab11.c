@@ -28,7 +28,9 @@ int main(int argc, char** argv)
 #endif
 
 	integral = (f(a) + f(b))/2.0; /* initialize variable integral */
-	for(i = 1; i < n; i++)
+#pragma omp parallel for num_threads(threadct) \
+    shared (a, n, h) private(i) reduction(+: integral)
+    for(i = 1; i < n; i++)
 	{
 		integral += f(a+i*h);
 	}
