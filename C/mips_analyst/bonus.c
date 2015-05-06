@@ -13,17 +13,17 @@
 struct tblref {
     char identifier[11];
     int defined;
-    int *lines;
+    int lines[100]; // everything set to 0
+    int size;
 };
 
 /* function list */
 void help(char*);
-void analyze(FILE*, struct tblref*);
+int analyze(FILE*, struct tblref*);
 void print_file(FILE*, FILE*);
 void print_table(FILE*, struct tblref*, int);
 int whitespace(char);
-char fpeek(FILE*);
-void go_to_n(char, FILE*);
+int find(char*, struct tblref*, int);
 
 int main(int argc, char **argv) {
     /* Preliminary checks and argument handling */
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
     else if(argc == 3) {
     	FILE *inf, *outf;
     	struct tblref references[100]; // array holding all references
-    	int tblsize = 0; // size of the above array
+    	int tblsize; // size of the above array
 
         /* check input filestream availability */
         if((inf = fopen(argv[1],"r")) == NULL) {
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
         }
 
         /* read file */
-        analyze(inf, references);
+        tblsize = analyze(inf, references);
 
         /* print file */
         print_file(inf, outf);
@@ -82,26 +82,48 @@ void help(char args[])  {
  * analyze(FILE*, struct tblref*)
  * Reads in the file and updates the given reference table array.
  */
-void analyze(FILE *inf, struct tblref* references) {
+int analyze(FILE *inf, struct tblref *references) {
 	rewind(inf); // just in case
 	char *str = malloc(81 * sizeof(char)); // including the null character
 	char *token;
 	int line = 1; // line number
+	int tblsize = 0; // table size
+	int index; // index of the table
 	while(fgets(str, 81, inf)) {
-		token = strtok(str, " ");
+		token = strtok(str, " \t");
 		while(token != NULL) {
 
 			/* if it's a comment, we can exit the loop */
-			if(token[0] == '#') break;
+			/* same for quotes */
+			if(token[0] == '#' || token[0] == '\'' || token[0] == '\"') break;
 
-			//printf("%s ", token); //debug
+			/* if it ends in a newline, get rid of it */
+			if(token[strlen(token) - 1] == '\n') token[strlen(token) - 1] = '\0';
+
+			/* if it has a ':', it's a label */
+			if(token[strlen(token) - 1] == ':') {
+				token[strlen(token) - 1] = '\0';
+				strcpy(references[tblsize].identifier, token);
+				references[tblsize].defined = line;
+				references[tblsize].size = 0;
+				tblsize++;
+			}
+
+			/* otherwise, we can check if it's used */
+			else {
+				index = find(token, references, tblsize);
+				if(index != -1) {
+					references[index].lines[references[index].size++] = line;
+				}
+			}
 
 			/* get next token */
-			token = strtok(NULL, " ");
+			token = strtok(NULL, " \t");
 
 		}
 		line++;
 	}
+	return tblsize;
 }
 
 /*
@@ -139,9 +161,8 @@ void print_table(FILE *outf, struct tblref* references, int tblsize) {
 	for(i = 0; i < tblsize; ++i) {
 		fprintf(outf, "\t%-11s", references[i].identifier);
 		fprintf(outf, "%-16d", references[i].defined);
-		j = 0;
-		while(references[i].lines[j] != 0) {
-			fprintf(outf, "%-4d", references[i].lines[j++]);
+		for(j = 0; j < references[i].size; ++j) {
+			fprintf(outf, "%-4d", references[i].lines[j]);
 		}
 		fprintf(outf, "\n");
 	}
@@ -157,26 +178,14 @@ void print_table(FILE *outf, struct tblref* references, int tblsize) {
  }
 
  /*
-  * char fpeek(FILE*)
-  * Small helper function that peeks at the next character in a filestream.
+  * int find(char*, struct tblref*, int)
+  * Small helper function that finds the string in the table and returns its index.
+  * Returns -1 if not found.
   */
-char fpeek(FILE *fstream) {
-	char c;
-	c = fgetc(fstream);
-	ungetc(c, fstream);
-	return c;
+int find(char *str, struct tblref *references, int tblsize) {
+	int i;
+	for(i = 0; i < tblsize; ++i) {
+		if(strcmp(references[i].identifier, str) == 0) return i;
+	}
+	return -1;
 }
-
-/*
- * void go_to_n(char, FILE*)
- * Small helper function that skips to the given character or EOF in a filestream.
- */
- void go_to_n(char character, FILE* fstream) {
- 	char c;
- 	while((c = fgetc(fstream)) != EOF) {
- 		if(c == character) {
- 			ungetc(character, fstream); // return back to character
- 			return;
- 		}
- 	}
- }
