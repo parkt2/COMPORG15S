@@ -3,7 +3,9 @@
  * Section: 01
  * Title: bonus.c
  * Comments:
- * The sentinel value for the lines is 0 since that will never be a valid line number.
+ * I included a size member to the struct to keep track of the size of the array 'lines', which
+ * holds 100 integers for the maximum possible number of lines per identifier according to
+ * the pdf.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +15,7 @@
 struct tblref {
     char identifier[11];
     int defined;
-    int lines[100]; // everything set to 0
+    int lines[100];
     int size;
 };
 
