@@ -5,12 +5,13 @@
  * Comments:
  * The sentinel value for the lines is 0 since that will never be a valid line number.
  */
-#include <stdio.h> // general I/O functions
-#include <stdlib.h> // certain overloaded functions (malloc in particular)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* struct for identifier reference table */
 struct tblref {
-    char *identifier;
+    char identifier[11];
     int defined;
     int *lines;
 };
@@ -83,27 +84,23 @@ void help(char args[])  {
  */
 void analyze(FILE *inf, struct tblref* references) {
 	rewind(inf); // just in case
-	char c;
-	int newline = 1; // new line boolean
-	int line = 0; // line number
-	while((c = fgetc(inf)) != EOF) {
+	char *str = malloc(81 * sizeof(char)); // including the null character
+	char *token;
+	int line = 1; // line number
+	while(fgets(str, 81, inf)) {
+		token = strtok(str, " ");
+		while(token != NULL) {
 
-		/* check if we're in a comment; if so, skip the line entirely */
-		if(c == '#') go_to_n('\n', inf);
+			/* if it's a comment, we can exit the loop */
+			if(token[0] == '#') break;
 
-		/* otherwise, continue */
-		else {
+			//printf("%s ", token); //debug
 
-			/* keep track of the line number! */
-			if(newline) {
-				if(c != '\n') line++;
-				newline = 0;
-			}
-
-			
+			/* get next token */
+			token = strtok(NULL, " ");
 
 		}
-
+		line++;
 	}
 }
 
